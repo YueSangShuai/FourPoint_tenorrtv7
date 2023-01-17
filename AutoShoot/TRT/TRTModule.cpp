@@ -15,6 +15,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#define IMAGE_SHOW
+
 static inline int argmax(const float *ptr, int len) {
     int max_arg = 0;
     for (int i = 1; i < len; i++) {
@@ -94,6 +96,7 @@ TRTModule::~TRTModule() {
 }
 
 std::vector<bbox_t> TRTModule::operator()( cv::Mat &src,float conf_thres,float iou_thres,float kpts_conf,int nc,int kpts) const{
+    auto start = std::chrono::system_clock::now();
     cv::Mat x=src.clone();
     if (src.cols != inputdims.d[1] || src.rows != inputdims.d[2]) {
         cv::resize(x, x, {inputdims.d[1], inputdims.d[2]});
@@ -151,39 +154,33 @@ std::vector<bbox_t> TRTModule::operator()( cv::Mat &src,float conf_thres,float i
             }
             if(iou(temp_box.pts,temppoint)>iou_thres) removed[j] = true;
         }
-
-//        cv::Rect2f bbox1;
-//
-//        bbox1.width = temp_box.rect[2];
-//        bbox1.height = temp_box.rect[3];
-//        bbox1.x = temp_box.rect[0]-temp_box.rect[2]/2;
-//        bbox1.y = temp_box.rect[1]-temp_box.rect[3]/2;
-//
-////        cv::circle(visual_img,cv::Point(temp_box.rect[0]-temp_box.rect[2]/2,temp_box.rect[1]-temp_box.rect[3]/2),2,cv::Scalar(0,0,255));
-//        cv::rectangle(visual_img,bbox1,cv::Scalar(0,0,255),1);
-
     }
 
-    for(int i=0;i<rst.size();i++){
+#ifdef IMAGE_SHOW
+    for(auto & i : rst){
         cv::Rect2f bbox1;
 
-        bbox1.width = rst[i].rect[2];
-        bbox1.height = rst[i].rect[3];
-        bbox1.x = rst[i].rect[0]-rst[i].rect[2]/2;
-        bbox1.y = rst[i].rect[1]-rst[i].rect[3]/2;
+        bbox1.width = i.rect[2];
+        bbox1.height = i.rect[3];
+        bbox1.x = i.rect[0]-i.rect[2]/2;
+        bbox1.y = i.rect[1]-i.rect[3]/2;
 
         cv::rectangle(visual_img,bbox1,cv::Scalar(0,255,255),2);
         for(size_t j=0;j<kpts;j++){
-            auto Point_conf=rst[i].kpts_conf[j];
+            auto Point_conf=i.kpts_conf[j];
             if(Point_conf>kpts_conf){
-                cv::circle(visual_img,cv::Point(rst[i].pts[j],rst[i].pts[j+kpts]),3,cv::Scalar(255,0,255),-1);
+                cv::circle(visual_img,cv::Point(i.pts[j],i.pts[j+kpts]),3,cv::Scalar(255,0,255),-1);
             }
         }
+
+        cv::putText(visual_img,std::to_string(i.class_id)+":"+std::to_string(i.conf),cv::Point(bbox1.x,bbox1.y),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255),2,2,false);
+        auto end = std::chrono::system_clock::now();
+        cv::putText(visual_img,"FPS:"+std::to_string(1000/(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count())),cv::Point(0,30),cv::FONT_HERSHEY_SIMPLEX,1.5,cv::Scalar(0,0,255),2,2,false);
     }
 
     cv::imshow("aaa", visual_img);
     cv::waitKey(1);
-
+#endif
     return rst;
 }
 

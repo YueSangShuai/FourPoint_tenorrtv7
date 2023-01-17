@@ -12,7 +12,7 @@ struct alignas(float)  bbox_t {
     float rect[4]; //xywh
     float conf; //置信度
     float pts[8]; // 四个点坐标
-    float class_id;//类别
+    int class_id;//类别
     float kpts_conf[4];
 
     bool operator==(const bbox_t&) const = default;

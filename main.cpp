@@ -6,7 +6,7 @@ int main(){
 
     cv::Mat temp=cv::imread("../test/test2.jpg");
     TRTModule model("../AutoShoot/model/merge.onnx");
-//    auto temp1=model(temp);
+    auto temp1=model(temp);
 
     cv::Mat frame;
     cv::VideoCapture capture = cv::VideoCapture("../test/1.mp4");
